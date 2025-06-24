@@ -30,7 +30,7 @@ for manifest in "${MANIFESTS[@]}"; do
 
   echo "Testing $manifest" | tee -a "$LOG_FILE"
 
-  if cargo test --manifest-path="$manifest" -- --test-threads=1 -vv | tee "$TMP_FILE"; then
+  if cargo test -vv --manifest-path="$manifest" -- --test-threads=1 | tee "$TMP_FILE"; then
     echo "✅ Tests passed for $manifest"
   else
     echo "::error ::Tests failed for $manifest! Check logs." | tee -a "$LOG_FILE"
