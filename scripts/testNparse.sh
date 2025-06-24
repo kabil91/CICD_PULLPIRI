@@ -14,6 +14,7 @@ cd "$PROJECT_ROOT"
 
 FAILED_TOTAL=0
 PASSED_TOTAL=0
+PIDS=()
 
 # Declare manifest paths
 COMMON_MANIFEST="src/common/Cargo.toml"
@@ -21,12 +22,31 @@ AGENT_MANIFEST="src/agent/Cargo.toml"
 TOOLS_MANIFEST="src/tools/Cargo.toml"
 APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
 FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
-# Function to run and parse test output
+ACTIONCONTROLLER_MANIFEST="src/player/actioncontroller/Cargo.toml"
+
+# Start background service and save its PID
+start_service() {
+  local manifest="$1"
+  local name="$2"
+
+  echo "🚀 Starting $name component for testing..." | tee -a "$LOG_FILE"
+  cargo run --manifest-path="$manifest" &>> "$LOG_FILE" &
+  PIDS+=($!)
+}
+
+# Ensure background processes are cleaned up
+cleanup() {
+  echo -e "\n🧹 Cleaning up background services..." | tee -a "$LOG_FILE"
+  kill "${PIDS[@]}" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# Run and parse test output
 run_tests() {
   local manifest="$1"
   local label="$2"
 
-  echo "Testing $label ($manifest)" | tee -a "$LOG_FILE"
+  echo "🧪 Running tests for $label ($manifest)" | tee -a "$LOG_FILE"
 
   if cargo test -vv --manifest-path="$manifest" -- --test-threads=1 | tee "$TMP_FILE"; then
     echo "✅ Tests passed for $label"
@@ -51,28 +71,44 @@ else
   echo "::warning ::$COMMON_MANIFEST not found, skipping..."
 fi
 
-# Start filtergateway (required by agent)
-echo "🚀 Starting filtergateway component for apiserver tests..."
-cargo run --manifest-path="$FILTERGATEWAY_MANIFEST" &
+# Start services required for apiserver
+start_service "$FILTERGATEWAY_MANIFEST" "filtergateway"
+start_service "$AGENT_MANIFEST" "nodeagent"
 
-# Start nodeagent (required by agent)
-echo "🚀 Starting nodeagent component for apiserver tests..."
-cargo run --manifest-path="$AGENT_MANIFEST" &
-
-TOOLS_PID=$!
-sleep 20  # Optional: wait for the service to be ready
+# Wait for services to be ready (simple delay)
+sleep 3
 
 # Run apiserver tests
 if [[ -f "$APISERVER_MANIFEST" ]]; then
-  run_tests "$APISERVER_MANIFEST" "agent"
+  run_tests "$APISERVER_MANIFEST" "apiserver"
 else
   echo "::warning ::$APISERVER_MANIFEST not found, skipping..."
 fi
 
-# Stop filtergateway process
-echo "🛑 Stopping filtergateway component after apiserver tests..."
-kill "$TOOLS_PID"
-wait "$TOOLS_PID" 2>/dev/null || true
+# Stop only those services needed for apiserver
+cleanup
+
+# Re-setup trap for any new background processes started later
+PIDS=()
+trap cleanup EXIT
+
+# Start actioncontroller for filtergateway tests
+start_service "$ACTIONCONTROLLER_MANIFEST" "actioncontroller"
+sleep 2
+
+# Run filtergateway tests
+if [[ -f "$FILTERGATEWAY_MANIFEST" ]]; then
+  run_tests "$FILTERGATEWAY_MANIFEST" "filtergateway"
+else
+  echo "::warning ::$FILTERGATEWAY_MANIFEST not found, skipping..."
+fi
+
+# Stop only those services needed for apiserver
+cleanup
+
+# Re-setup trap for any new background processes started later
+PIDS=()
+trap cleanup EXIT
 
 # Run tools tests
 if [[ -f "$TOOLS_MANIFEST" ]]; then
@@ -83,12 +119,12 @@ fi
 
 # Run agent tests
 if [[ -f "$AGENT_MANIFEST" ]]; then
-  run_tests "$AGENT_MANIFEST" "tools"
+  run_tests "$AGENT_MANIFEST" "agent"
 else
   echo "::warning ::$AGENT_MANIFEST not found, skipping..."
 fi
 
-# Generate a test report
+# Generate test summary report
 echo "# Test Results" > "$REPORT_FILE"
 echo "**Passed:** $PASSED_TOTAL" >> "$REPORT_FILE"
 echo "**Failed:** $FAILED_TOTAL" >> "$REPORT_FILE"
