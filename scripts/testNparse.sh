@@ -22,21 +22,20 @@ AGENT_MANIFEST="src/agent/Cargo.toml"
 TOOLS_MANIFEST="src/tools/Cargo.toml"
 APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
 FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
-ACTIONCONTROLLER_MANIFEST="src/player/actioncontroller/Cargo.toml"
 
 # Start background service and save its PID
 start_service() {
   local manifest="$1"
   local name="$2"
 
-  echo "🚀 Starting $name component for testing..." | tee -a "$LOG_FILE"
+  echo "Starting $name component for testing..." | tee -a "$LOG_FILE"
   cargo run --manifest-path="$manifest" &>> "$LOG_FILE" &
   PIDS+=($!)
 }
 
 # Ensure background processes are cleaned up
 cleanup() {
-  echo -e "\n🧹 Cleaning up background services..." | tee -a "$LOG_FILE"
+  echo -e "\n Cleaning up background services..." | tee -a "$LOG_FILE"
   kill "${PIDS[@]}" 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -46,10 +45,10 @@ run_tests() {
   local manifest="$1"
   local label="$2"
 
-  echo "🧪 Running tests for $label ($manifest)" | tee -a "$LOG_FILE"
+  echo "Running tests for $label ($manifest)" | tee -a "$LOG_FILE"
 
   if cargo test -vv --manifest-path="$manifest" -- --test-threads=1 | tee "$TMP_FILE"; then
-    echo "✅ Tests passed for $label"
+    echo "Tests passed for $label"
   else
     echo "::error ::Tests failed for $label! Check logs." | tee -a "$LOG_FILE"
   fi
@@ -119,4 +118,4 @@ if [[ "$FAILED_TOTAL" -gt 0 ]]; then
   exit 1
 fi
 
-echo "✅ All tests passed successfully!" | tee -a "$LOG_FILE"
+echo "All tests passed successfully!" | tee -a "$LOG_FILE"
