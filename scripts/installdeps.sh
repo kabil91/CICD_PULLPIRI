@@ -38,9 +38,15 @@ if docker ps -a --format '{{.Names}}' | grep -q '^piccolo-etcd$'; then
     echo "ℹ️ etcd container already exists. Skipping creation."
 else
     docker run -it -d --name piccolo-etcd \
-        -p 2379:2379 -p 2380:2380 \
-        gcr.io/etcd-development/etcd:v3.5.11 \
-        /usr/local/bin/etcd
+  -p 2379:2379 -p 2380:2380 \
+  gcr.io/etcd-development/etcd:v3.5.11 \
+  /usr/local/bin/etcd \
+  --name s1 \
+  --data-dir /etcd-data \
+  --initial-advertise-peer-urls http://localhost:2380 \
+  --listen-peer-urls http://0.0.0.0:2380 \
+  --advertise-client-urls http://localhost:2379 \
+  --listen-client-urls http://0.0.0.0:2379
     echo "✅ etcd container started as 'piccolo-etcd'."
 fi
 
