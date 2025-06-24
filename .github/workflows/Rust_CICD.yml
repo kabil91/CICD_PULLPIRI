@@ -23,3 +23,6 @@ jobs:
 
     - name: Build
       run: ./scripts/buildNparse.sh
+
+    - name: Test
+      run: ./scripts/testNparse.sh
