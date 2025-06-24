@@ -5,7 +5,7 @@ under the `doc` folder for external (official) use.
 
 ## Preparation
 
-Basically, there is Piccolo-related documents in `doc/docs` folder, but there
+Basically, there is Piccolo-related documents in `doc/docs` folder, but there ()
 are many parts that are different from the present as past data, so it is
 only used for reference.
 
