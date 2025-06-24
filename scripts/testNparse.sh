@@ -6,42 +6,47 @@ LOG_FILE="test_results.log"
 TMP_FILE="test_output.txt"
 REPORT_FILE="test_summary.md"
 
-echo "Running Cargo Test..." | tee -a $LOG_FILE
+echo "Running Cargo Tests..." | tee -a $LOG_FILE
 PROJECT_ROOT=$(git rev-parse --show-toplevel)
-cd $PROJECT_ROOT
-#make test | tee $TMP_FILE || true
-cargo test -vv --manifest-path=src/common/Cargo.toml | tee $TMP_FILE || true
-if [[ "$FAILED" -gt 0 ]]; then
-    echo "::error ::Tests failed! Check logs." | tee -a $LOG_FILE
-    exit 1
-fi
-cargo test -vv --manifest-path=src/agent/Cargo.toml | tee $TMP_FILE || true
-if [[ "$FAILED" -gt 0 ]]; then
-    echo "::error ::Tests failed! Check logs." | tee -a $LOG_FILE
-    exit 1
-fi
-#cargo test -vv --manifest-path=src/player/Cargo.toml | tee $TMP_FILE || true
-#cargo test -vv --manifest-path=src/server/Cargo.toml | tee $TMP_FILE || true
-cargo test -vv --manifest-path=src/tools/Cargo.toml | tee $TMP_FILE || true
-if [[ "$FAILED" -gt 0 ]]; then
-    echo "::error ::Tests failed! Check logs." | tee -a $LOG_FILE
-    exit 1
-fi
+cd "$PROJECT_ROOT"
 
-PASSED=$(grep -oP '\d+ passed' $TMP_FILE | awk '{print $1}')
-FAILED=$(grep -oP '\d+ failed' $TMP_FILE | awk '{print $1}')
+FAILED_TOTAL=0
+PASSED_TOTAL=0
 
-echo "Tests Passed: $PASSED" | tee -a $LOG_FILE
-echo "Tests Failed: $FAILED" | tee -a $LOG_FILE
+# Define your manifest paths
+MANIFESTS=(
+  src/common/Cargo.toml
+  src/agent/Cargo.toml
+  src/tools/Cargo.toml
+)
+
+for manifest in "${MANIFESTS[@]}"; do
+  echo "Testing $manifest" | tee -a "$LOG_FILE"
+
+  if cargo test -vv --manifest-path="$manifest" | tee "$TMP_FILE"; then
+    echo "Tests passed for $manifest"
+  else
+    echo "::error ::Tests failed for $manifest! Check logs." | tee -a "$LOG_FILE"
+  fi
+
+  PASSED=$(grep -oP '\d+ passed' "$TMP_FILE" | awk '{sum += $1} END {print sum}')
+  FAILED=$(grep -oP '\d+ failed' "$TMP_FILE" | awk '{sum += $1} END {print sum}')
+
+  PASSED_TOTAL=$((PASSED_TOTAL + PASSED))
+  FAILED_TOTAL=$((FAILED_TOTAL + FAILED))
+done
 
 # Generate a report
-echo "# Test Results" > $REPORT_FILE
-echo "**Passed:** $PASSED" >> $REPORT_FILE
-echo "**Failed:** $FAILED" >> $REPORT_FILE
+echo "# Test Results" > "$REPORT_FILE"
+echo "**Passed:** $PASSED_TOTAL" >> "$REPORT_FILE"
+echo "**Failed:** $FAILED_TOTAL" >> "$REPORT_FILE"
 
-#if [[ "$FAILED" -gt 0 ]]; then
-#    echo "::error ::Tests failed! Check logs." | tee -a $LOG_FILE
-#    exit 1
-#fi
+echo "Tests Passed: $PASSED_TOTAL" | tee -a "$LOG_FILE"
+echo "Tests Failed: $FAILED_TOTAL" | tee -a "$LOG_FILE"
 
-echo "All tests passed successfully!" | tee -a $LOG_FILE
+if [[ "$FAILED_TOTAL" -gt 0 ]]; then
+  echo "::error ::Some tests failed!" | tee -a "$LOG_FILE"
+  exit 1
+fi
+
+echo "All tests passed successfully!" | tee -a "$LOG_FILE"
