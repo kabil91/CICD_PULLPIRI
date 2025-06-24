@@ -15,35 +15,76 @@ cd "$PROJECT_ROOT"
 FAILED_TOTAL=0
 PASSED_TOTAL=0
 
-# Define your manifest paths
-MANIFESTS=(
-  src/common/Cargo.toml
-  src/agent/Cargo.toml
-  src/tools/Cargo.toml
-)
+# Declare manifest paths
+COMMON_MANIFEST="src/common/Cargo.toml"
+AGENT_MANIFEST="src/agent/Cargo.toml"
+TOOLS_MANIFEST="src/tools/Cargo.toml"
+APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
+FILTERGATEWAY_MANIFEST="src/payer/filtergateway/Cargo.toml"
+# Function to run and parse test output
+run_tests() {
+  local manifest="$1"
+  local label="$2"
 
-for manifest in "${MANIFESTS[@]}"; do
-  if [[ ! -f "$manifest" ]]; then
-    echo "::warning ::$manifest not found, skipping..." | tee -a "$LOG_FILE"
-    continue
-  fi
-
-  echo "Testing $manifest" | tee -a "$LOG_FILE"
+  echo "Testing $label ($manifest)" | tee -a "$LOG_FILE"
 
   if cargo test -vv --manifest-path="$manifest" -- --test-threads=1 | tee "$TMP_FILE"; then
-    echo "✅ Tests passed for $manifest"
+    echo "✅ Tests passed for $label"
   else
-    echo "::error ::Tests failed for $manifest! Check logs." | tee -a "$LOG_FILE"
+    echo "::error ::Tests failed for $label! Check logs." | tee -a "$LOG_FILE"
   fi
 
-  PASSED=$(grep -oP '\d+ passed' "$TMP_FILE" | awk '{sum += $1} END {print sum}')
-  FAILED=$(grep -oP '\d+ failed' "$TMP_FILE" | awk '{sum += $1} END {print sum}')
+  local passed
+  local failed
 
-  PASSED_TOTAL=$((PASSED_TOTAL + PASSED))
-  FAILED_TOTAL=$((FAILED_TOTAL + FAILED))
-done
+  passed=$(grep -oP '\d+ passed' "$TMP_FILE" | awk '{sum += $1} END {print sum}')
+  failed=$(grep -oP '\d+ failed' "$TMP_FILE" | awk '{sum += $1} END {print sum}')
 
-# Generate a report
+  PASSED_TOTAL=$((PASSED_TOTAL + passed))
+  FAILED_TOTAL=$((FAILED_TOTAL + failed))
+}
+
+# Run common tests
+if [[ -f "$COMMON_MANIFEST" ]]; then
+  run_tests "$COMMON_MANIFEST" "common"
+else
+  echo "::warning ::$COMMON_MANIFEST not found, skipping..."
+fi
+
+# Start filtergateway (required by agent)
+echo "🚀 Starting filtergateway component for apiserver tests..."
+cargo run --manifest-path="$FILTERGATEWAY_MANIFEST" &
+
+TOOLS_PID=$!
+sleep 2  # Optional: wait for the service to be ready
+
+# Run apiserver tests
+if [[ -f "$APISERVER_MANIFEST" ]]; then
+  run_tests "$APISERVER_MANIFEST" "agent"
+else
+  echo "::warning ::$APISERVER_MANIFEST not found, skipping..."
+fi
+
+# Stop filtergateway process
+echo "🛑 Stopping filtergateway component after apiserver tests..."
+kill "$TOOLS_PID"
+wait "$TOOLS_PID" 2>/dev/null || true
+
+# Run tools tests
+if [[ -f "$TOOLS_MANIFEST" ]]; then
+  run_tests "$TOOLS_MANIFEST" "tools"
+else
+  echo "::warning ::$TOOLS_MANIFEST not found, skipping..."
+fi
+
+# Run agent tests
+if [[ -f "$AGENT_MANIFEST" ]]; then
+  run_tests "$AGENT_MANIFEST" "tools"
+else
+  echo "::warning ::$AGENT_MANIFEST not found, skipping..."
+fi
+
+# Generate a test report
 echo "# Test Results" > "$REPORT_FILE"
 echo "**Passed:** $PASSED_TOTAL" >> "$REPORT_FILE"
 echo "**Failed:** $FAILED_TOTAL" >> "$REPORT_FILE"
