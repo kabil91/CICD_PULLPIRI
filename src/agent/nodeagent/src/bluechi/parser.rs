@@ -57,6 +57,7 @@ mod tests {
     use super::*;
     use serde::de::Deserialize;
     use serde_yaml::Deserializer;
+    use serde_yaml::Value;
     /// Helper function to extract a `Package` from a multi-document YAML
     fn extract_package_from_multi_yaml(yaml: &str) -> Option<Package> {
         let deserializer = Deserializer::from_str(yaml);
@@ -187,24 +188,60 @@ spec:
         assert!(result.is_ok());
         let models = result.unwrap();
         assert_eq!(models.len(), 1);
+        common::etcd::delete("Model/test-model")
+            .await
+            .expect("Failed to delete key from etcd");
+        common::etcd::delete("Network/test-network")
+            .await
+            .expect("Failed to delete key from etcd");
+        common::etcd::delete("Volume/test-volume")
+            .await
+            .expect("Failed to delete key from etcd");
     }
     // Test case for a valid scenario where get_complete_model works correctly
     #[tokio::test]
     async fn test_get_complete_model_success() {
-        // Create a dummy package with valid data
-        let package = extract_package_from_multi_yaml(VALID_ARTIFACT_YAML);
+        // Step 1: Extract all YAML documents
+        let yamls: Vec<&str> = VALID_ARTIFACT_YAML
+            .split("---")
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .collect();
 
-        // Call get_complete_model and check if it returns Ok
-        let result = get_complete_model(package.expect("REASON")).await;
+        // Step 2: Find the Model YAML
+        for doc in &yamls {
+            if let Ok(value) = serde_yaml::from_str::<Value>(doc) {
+                if value["kind"] == "Model" {
+                    // Step 3: Get the model name
+                    let model_name = value["metadata"]["name"]
+                        .as_str()
+                        .expect("Model name missing");
 
-        // If result is an error, print the error for debugging
+                    // Step 4: Put into etcd
+                    common::etcd::put(&format!("Model/{}", model_name), doc)
+                        .await
+                        .expect("Failed to put Model into etcd");
+                }
+            }
+        }
+
+        // Step 5: Extract package
+        let package = extract_package_from_multi_yaml(VALID_ARTIFACT_YAML)
+            .expect("Failed to extract package");
+
+        // Step 6: Call get_complete_model
+        let result = get_complete_model(package).await;
+
+        // Step 7: Assert success
         assert!(
             result.is_ok(),
             "get_complete_model failed: {:?}",
             result.err()
         );
+        common::etcd::delete("Model/helloworld-core")
+            .await
+            .expect("Failed to delete key from etcd");
     }
-
     // Test case for invalid YAML, ensuring deserialization fails
     #[tokio::test]
     async fn test_get_complete_model_invalid_yaml() {

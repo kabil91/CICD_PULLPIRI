@@ -24,6 +24,4 @@ impl NodeAgentManager {
         //ToDo : Implement the logic  1. extart etcd Network. 2. using extracted data to control the node
         Ok(())
     }
-
 }
-
