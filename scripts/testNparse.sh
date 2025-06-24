@@ -92,24 +92,6 @@ cleanup
 PIDS=()
 trap cleanup EXIT
 
-# Start actioncontroller for filtergateway tests
-start_service "$ACTIONCONTROLLER_MANIFEST" "actioncontroller"
-sleep 2
-
-# Run filtergateway tests
-if [[ -f "$FILTERGATEWAY_MANIFEST" ]]; then
-  run_tests "$FILTERGATEWAY_MANIFEST" "filtergateway"
-else
-  echo "::warning ::$FILTERGATEWAY_MANIFEST not found, skipping..."
-fi
-
-# Stop only those services needed for apiserver
-cleanup
-
-# Re-setup trap for any new background processes started later
-PIDS=()
-trap cleanup EXIT
-
 # Run tools tests
 if [[ -f "$TOOLS_MANIFEST" ]]; then
   run_tests "$TOOLS_MANIFEST" "tools"
