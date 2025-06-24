@@ -20,7 +20,7 @@ COMMON_MANIFEST="src/common/Cargo.toml"
 AGENT_MANIFEST="src/agent/Cargo.toml"
 TOOLS_MANIFEST="src/tools/Cargo.toml"
 APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
-FILTERGATEWAY_MANIFEST="src/payer/filtergateway/Cargo.toml"
+FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
 # Function to run and parse test output
 run_tests() {
   local manifest="$1"
