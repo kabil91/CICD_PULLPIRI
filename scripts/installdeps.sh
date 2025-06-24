@@ -10,14 +10,13 @@ common_packages=(
   git-all
   make
   gcc
-  docker.io 
-  protobuf-compiler 
-  build-essential 
-  pkg-config 
-  curl 
-  libssl-dev 
+  docker.io
+  protobuf-compiler
+  build-essential
+  pkg-config
+  curl
+  libssl-dev
   nodejs
-  podman
 )
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y "${common_packages[@]}"
@@ -32,12 +31,16 @@ cp etcd-${ETCD_VER}-linux-amd64/etcdctl /usr/local/bin/
 chmod +x /usr/local/bin/etcdctl
 echo "✅ etcdctl installed at /usr/local/bin/etcdctl"
 
-# Start etcd with Podman
-echo "🚀 Starting etcd container with Podman..."
+# Start etcd with Docker
+echo "🚀 Starting etcd container with Docker..."
 
-podman run -it -d -p 2379:2379 -p 2380:2380 --name=piccolo-etcd \
-  gcr.io/etcd-development/etcd:v3.5.11 \
-  /usr/local/bin/etcd
+if docker ps -a --format '{{.Names}}' | grep -q '^piccolo-etcd$'; then
+    echo "ℹ️ etcd container already exists. Skipping creation."
+else
+    docker run -it -d --name piccolo-etcd \
+        -p 2379:2379 -p 2380:2380 \
+        gcr.io/etcd-development/etcd:v3.5.11 \
+        /usr/local/bin/etcd
     echo "✅ etcd container started as 'piccolo-etcd'."
 fi
 
