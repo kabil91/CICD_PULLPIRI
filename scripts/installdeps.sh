@@ -35,12 +35,9 @@ echo "✅ etcdctl installed at /usr/local/bin/etcdctl"
 # Start etcd with Podman
 echo "🚀 Starting etcd container with Podman..."
 
-if podman container exists piccolo-etcd; then
-    echo "ℹ️ etcd container already exists. Skipping creation."
-else
-    docker run -it -d --net=host --name=piccolo-etcd \
-        gcr.io/etcd-development/etcd:v3.5.11 \
-        /usr/local/bin/etcd
+podman run -it -d -p 2379:2379 -p 2380:2380 --name=piccolo-etcd \
+  gcr.io/etcd-development/etcd:v3.5.11 \
+  /usr/local/bin/etcd
     echo "✅ etcd container started as 'piccolo-etcd'."
 fi
 
