@@ -51,16 +51,16 @@ else
   echo "::warning ::$COMMON_MANIFEST not found, skipping..."
 fi
 
-# Start filtergateway (required by agent)
+# Start filtergateway (required by apiserver)
 echo "🚀 Starting filtergateway component for apiserver tests..."
 cargo run --manifest-path="$FILTERGATEWAY_MANIFEST" &
 
 TOOLS_PID=$!
-sleep 2  # Optional: wait for the service to be ready
+sleep 10  # Optional: wait for the service to be ready
 
 # Run apiserver tests
 if [[ -f "$APISERVER_MANIFEST" ]]; then
-  run_tests "$APISERVER_MANIFEST" "agent"
+  run_tests "$APISERVER_MANIFEST" "apiserver"
 else
   echo "::warning ::$APISERVER_MANIFEST not found, skipping..."
 fi
