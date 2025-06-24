@@ -1,13 +1,15 @@
 #!/bin/bash
-
-set -e
+set -euo pipefail
 
 LOG_FILE="test_results.log"
 TMP_FILE="test_output.txt"
 REPORT_FILE="test_summary.md"
 
-echo "Running Cargo Tests..." | tee -a $LOG_FILE
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
+rm -f "$LOG_FILE" "$TMP_FILE" "$REPORT_FILE"
+
+echo "Running Cargo Tests..." | tee -a "$LOG_FILE"
+
+PROJECT_ROOT=${GITHUB_WORKSPACE:-$(pwd)}
 cd "$PROJECT_ROOT"
 
 FAILED_TOTAL=0
@@ -21,10 +23,15 @@ MANIFESTS=(
 )
 
 for manifest in "${MANIFESTS[@]}"; do
+  if [[ ! -f "$manifest" ]]; then
+    echo "::warning ::$manifest not found, skipping..." | tee -a "$LOG_FILE"
+    continue
+  fi
+
   echo "Testing $manifest" | tee -a "$LOG_FILE"
 
-  if cargo test -- --test-thread=1 -vv --manifest-path="$manifest" | tee "$TMP_FILE"; then
-    echo "Tests passed for $manifest"
+  if cargo test --manifest-path="$manifest" -- --test-threads=1 -vv | tee "$TMP_FILE"; then
+    echo "✅ Tests passed for $manifest"
   else
     echo "::error ::Tests failed for $manifest! Check logs." | tee -a "$LOG_FILE"
   fi
@@ -49,4 +56,4 @@ if [[ "$FAILED_TOTAL" -gt 0 ]]; then
   exit 1
 fi
 
-echo "All tests passed successfully!" | tee -a "$LOG_FILE"
+echo "✅ All tests passed successfully!" | tee -a "$LOG_FILE"
