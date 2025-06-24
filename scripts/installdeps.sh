@@ -1,5 +1,10 @@
 #!/bin/bash
+set -euo pipefail
 
+echo "🛠️  Updating package lists..."
+apt-get update -y
+
+echo "📦 Installing common packages..."
 common_packages=(
   libdbus-1-dev
   git-all
@@ -12,16 +17,31 @@ common_packages=(
   curl 
   libssl-dev 
   nodejs
+  podman
 )
-specific_packages=()
 
-#apt-get update && apt-get install --no-install-recommends "${common_packages[@]}" "${specific_packages[@]}"
-apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y "${common_packages[@]}" "${specific_packages[@]}"
+DEBIAN_FRONTEND=noninteractive apt-get install -y "${common_packages[@]}"
+echo "✅ Base packages installed successfully."
 
-if [[ "$FAILED" -gt 0 ]]; then
-    echo "::error ::Package installation failed! Check logs."
-    exit 1
+# Install etcdctl
+echo "🔧 Installing etcdctl..."
+ETCD_VER=v3.5.11
+curl -L "https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz" -o etcd.tar.gz
+tar xzvf etcd.tar.gz
+cp etcd-${ETCD_VER}-linux-amd64/etcdctl /usr/local/bin/
+chmod +x /usr/local/bin/etcdctl
+echo "✅ etcdctl installed at /usr/local/bin/etcdctl"
+
+# Start etcd with Podman
+echo "🚀 Starting etcd container with Podman..."
+
+if podman container exists piccolo-etcd; then
+    echo "ℹ️ etcd container already exists. Skipping creation."
+else
+    podman run -it -d --net=host --name=piccolo-etcd \
+        gcr.io/etcd-development/etcd:v3.5.11 \
+        /usr/local/bin/etcd
+    echo "✅ etcd container started as 'piccolo-etcd'."
 fi
 
 exit 0
