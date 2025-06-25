@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [package]
-name = "apiserver"
+name = "apiserver"aaa
 version = "0.1.0"
 edition = "2021"
 description = "A Pullpiri daemon that operates like API server of k8s"
