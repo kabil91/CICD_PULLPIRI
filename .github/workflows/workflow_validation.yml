@@ -1,4 +1,4 @@
-name: Validate Workflow Syntax
+name: Validate Workflow Syntax1
 
 on:
   pull_request:
