@@ -16,7 +16,7 @@ FAILED_TOTAL=0
 PASSED_TOTAL=0
 PIDS=()
 
-# Declare manifest paths
+# Declare manifest paths a
 COMMON_MANIFEST="src/common/Cargo.toml"
 AGENT_MANIFEST="src/agent/Cargo.toml"
 TOOLS_MANIFEST="src/tools/Cargo.toml"
