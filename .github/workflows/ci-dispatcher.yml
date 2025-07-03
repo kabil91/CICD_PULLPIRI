@@ -15,7 +15,6 @@ jobs:
       yaml_changed: ${{ steps.filter.outputs.yaml }}
     steps:
       - uses: actions/checkout@v4
-
       - id: filter
         uses: dorny/paths-filter@v3
         with:
@@ -44,3 +43,17 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.yaml_changed == 'true'
     uses: ./.github/workflows/run-validate.yml
+
+  # ✅ Final wait job
+  wait-for-all:
+    name: ✅ All CI Checks Complete
+    needs:
+      - run-rust-ci
+      - run-doc-lint
+      - run-yaml-validation
+    runs-on: ubuntu-latest
+    if: |
+      always()
+    steps:
+      - name: Finalize CI
+        run: echo "All relevant CI jobs have finished."
