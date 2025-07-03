@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: Copyright 2024 LG Electronics Inc.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Pullpiri
+# Pullpiri Akshay
 
 - [Development](#development)
   - [Environment Setup](#environment-setup)
