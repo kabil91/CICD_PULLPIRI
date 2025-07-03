@@ -44,16 +44,14 @@ jobs:
     if: needs.detect-changes.outputs.yaml_changed == 'true'
     uses: ./.github/workflows/run-validate.yml
 
-  # ✅ Final wait job
-  wait-for-all:
-    name: ✅ All CI Checks Complete
+  # ✅ Final job for branch protection
+  ci-summary:
+    name: CI Complete Summary
+    runs-on: ubuntu-latest
+    if: always()
     needs:
       - run-rust-ci
       - run-doc-lint
       - run-yaml-validation
-    runs-on: ubuntu-latest
-    if: |
-      always()
     steps:
-      - name: Finalize CI
-        run: echo "All relevant CI jobs have finished."
+      - run: echo "All CI jobs (if triggered) have completed."
