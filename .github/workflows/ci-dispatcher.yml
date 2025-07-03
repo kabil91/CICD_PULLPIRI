@@ -44,7 +44,7 @@ jobs:
     if: needs.detect-changes.outputs.yaml_changed == 'true'
     uses: ./.github/workflows/run-validate.yml
 
-  # ✅ Final job for branch protection
+  # Final job for branch protection
   ci-summary:
     name: CI Complete Summary
     runs-on: ubuntu-latest
