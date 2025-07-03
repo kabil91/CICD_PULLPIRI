@@ -19,7 +19,7 @@ common_packages=(
   npm
 )
 DEBIAN_FRONTEND=noninteractive apt-get install -y "${common_packages[@]}"
-echo "✅ Base packages installed successfully."
+echo "Base packages installed successfully."
 
 # ✅ Ensure rustup and Rust components (clippy + rustfmt) are installed
 echo "🦀 Installing rustup, Clippy, and Rustfmt..."
