@@ -49,12 +49,32 @@ run_deny() {
 }
 
 # Run deny check for each manifest
-#[[ -f "$COMMON_MANIFEST" ]]       && run_deny "$COMMON_MANIFEST" "common"        || echo "::warning ::$COMMON_MANIFEST not found, skipping..."
-#[[ -f "$AGENT_MANIFEST" ]]        && run_deny "$AGENT_MANIFEST" "agent"          || echo "::warning ::$AGENT_MANIFEST not found, skipping..."
-#[[ -f "$TOOLS_MANIFEST" ]]        && run_deny "$TOOLS_MANIFEST" "tools"          || echo "::warning ::$TOOLS_MANIFEST not found, skipping..."
-[[ -f "$APISERVER_MANIFEST" ]]    && run_deny "$APISERVER_MANIFEST" "apiserver"  || echo "::warning ::$APISERVER_MANIFEST not found, skipping..."
-#[[ -f "$FILTERGATEWAY_MANIFEST" ]]&& run_deny "$FILTERGATEWAY_MANIFEST" "filtergateway" || echo "::warning ::$FILTERGATEWAY_MANIFEST not found, skipping..."
+# if [[ -f "$COMMON_MANIFEST" ]]; then
+#   run_deny "$COMMON_MANIFEST" "common"
+# else
+#   echo "::warning ::$COMMON_MANIFEST not found, skipping..."
+# fi
 
+# Run apiserver deny checks
+if [[ -f "$APISERVER_MANIFEST" ]]; then
+  run_deny "$APISERVER_MANIFEST" "apiserver"
+else
+  echo "::warning ::$APISERVER_MANIFEST not found, skipping..."
+fi
+
+# Run tools deny checks
+# if [[ -f "$TOOLS_MANIFEST" ]]; then
+#   run_deny "$TOOLS_MANIFEST" "tools"
+# else
+#   echo "::warning ::$TOOLS_MANIFEST not found, skipping..."
+# fi
+
+# # Run agent deny checks
+# if [[ -f "$AGENT_MANIFEST" ]]; then
+#   run_deny "$AGENT_MANIFEST" "agent"
+# else
+#   echo "::warning ::$AGENT_MANIFEST not found, skipping..."
+# fi
 # Final summary
 echo -e "\n📄 Summary:" | tee -a "$LOG_FILE"
 cat "$REPORT_FILE" | tee -a "$LOG_FILE"
