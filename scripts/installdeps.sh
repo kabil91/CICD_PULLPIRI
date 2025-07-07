@@ -4,7 +4,7 @@ set -euo pipefail
 echo "🛠️ Updating package lists..."
 apt-get update -y
 
-echo "📦 Installing common packages..."
+echo "📦 Installing common development packages..."
 common_packages=(
   libdbus-1-dev
   git-all
@@ -19,44 +19,63 @@ common_packages=(
   npm
 )
 DEBIAN_FRONTEND=noninteractive apt-get install -y "${common_packages[@]}"
-echo "Base packages installed successfully."
+echo "✅ Base packages installed successfully."
 
-# ✅ Ensure rustup and Rust components (clippy + rustfmt) are installed
-echo "🦀 Installing rustup, Clippy, and Rustfmt..."
+# ----------------------------------------
+# 🦀 Install rustup, Clippy, Rustfmt, and cargo-deny
+# ----------------------------------------
+
+echo "🦀 Installing Rust toolchain..."
 if ! command -v rustup &>/dev/null; then
-  curl https://sh.rustup.rs -sSf | sh -s -- -y
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
   source "$HOME/.cargo/env"
 fi
 
-# Add cargo binaries to PATH for non-login shells
+# Ensure PATH is correctly set
 export PATH="$HOME/.cargo/bin:$PATH"
 
-# Install Clippy
+# Install required Rust components
+echo "🔧 Installing Clippy and Rustfmt..."
 rustup component add clippy
-
-# Install rustfmt
 rustup component add rustfmt
 
-# Check versions to verify
-echo "📌 Installed versions:"
+# Install cargo-deny
+if ! command -v cargo-deny &>/dev/null; then
+  echo "🔐 Installing cargo-deny..."
+  cargo install cargo-deny
+fi
+
+# Show installed versions
+echo "📌 Installed Rust toolchain versions:"
+cargo --version
 cargo clippy --version
 cargo fmt --version
+cargo deny --version
+echo "✅ Rust toolchain installed successfully."
 
-echo "✅ Clippy and Rustfmt installed successfully."
+# ----------------------------------------
+# 📦 Install etcd & etcdctl
+# ----------------------------------------
 
-# Install etcd and etcdctl
-echo "🔧 Installing etcd..."
-ETCD_VER=v3.5.11
-curl -L "https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz" -o etcd.tar.gz
+echo "🔧 Installing etcd and etcdctl..."
+ETCD_VER="v3.5.11"
+ETCD_PKG="etcd-${ETCD_VER}-linux-amd64"
+ETCD_URL="https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/${ETCD_PKG}.tar.gz"
+
+curl -L "$ETCD_URL" -o etcd.tar.gz
 tar xzvf etcd.tar.gz
-cp etcd-${ETCD_VER}-linux-amd64/etcd /usr/local/bin/
-cp etcd-${ETCD_VER}-linux-amd64/etcdctl /usr/local/bin/
+cp "${ETCD_PKG}/etcd" /usr/local/bin/
+cp "${ETCD_PKG}/etcdctl" /usr/local/bin/
 chmod +x /usr/local/bin/etcd /usr/local/bin/etcdctl
-rm -rf etcd.tar.gz etcd-${ETCD_VER}-linux-amd64
+rm -rf etcd.tar.gz "${ETCD_PKG}"
+
 echo "✅ etcd and etcdctl installed."
 
-# Start etcd directly
-echo "🚀 Starting etcd directly..."
+# ----------------------------------------
+# 🚀 Start etcd in background
+# ----------------------------------------
+
+echo "🚀 Starting etcd..."
 nohup etcd \
   --name s1 \
   --data-dir /tmp/etcd-data \
@@ -66,22 +85,28 @@ nohup etcd \
   --listen-client-urls http://127.0.0.1:2379 > etcd.log 2>&1 &
 
 ETCD_PID=$!
-echo "🔍 etcd started with PID $ETCD_PID"
+echo "🆔 etcd started with PID $ETCD_PID"
 
-# Wait for etcd to become healthy
-echo "⏳ Waiting for etcd to be ready..."
+# ----------------------------------------
+# ⏳ Wait for etcd to become healthy
+# ----------------------------------------
+
+echo "⏳ Waiting for etcd to be healthy..."
 for i in {1..10}; do
   if etcdctl --endpoints=http://localhost:2379 endpoint health &>/dev/null; then
     echo "✅ etcd is healthy and ready."
     break
   else
-    echo "Waiting for etcd to become healthy... ($i)"
+    echo "⌛ Waiting... ($i)"
     sleep 2
   fi
 done
 
+# Final check before continuing
 if ! etcdctl --endpoints=http://localhost:2379 endpoint health &>/dev/null; then
   echo "::error ::etcd did not become healthy in time!"
   cat etcd.log
   exit 1
 fi
+
+echo "🎉 All dependencies installed and etcd is running!"
