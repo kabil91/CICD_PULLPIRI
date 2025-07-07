@@ -17,7 +17,7 @@ FAILED_TOTAL=0
 PASSED_TOTAL=0
 
 # === Declare manifest paths ===
-# Uncomment these as needed
+# Uncomment others as needed
 # COMMON_MANIFEST="src/common/Cargo.toml"
 # AGENT_MANIFEST="src/agent/Cargo.toml"
 # TOOLS_MANIFEST="src/tools/Cargo.toml"
@@ -37,23 +37,19 @@ run_deny() {
     deny_passed=true
   else
     echo "::error ::Deny check for $label failed! Issues found." | tee -a "$LOG_FILE"
-    grep -E "error:|warning:" "$TMP_FILE" | tee -a "$LOG_FILE"
+    grep -E "error:|warning:" "$TMP_FILE" || true | tee -a "$LOG_FILE"
   fi
 
   if $deny_passed; then
-    echo "✅ Deny check for $label: PASSED" >> "$REPORT_FILE"
+    echo "✅ deny check for $label: PASSED" >> "$REPORT_FILE"
     (( PASSED_TOTAL++ ))
   else
-    echo "❌ Deny check for $label: FAILED" >> "$REPORT_FILE"
+    echo "❌ deny check for $label: FAILED" >> "$REPORT_FILE"
     (( FAILED_TOTAL++ ))
   fi
 }
 
 # === Run deny checks ===
-
-# if [[ -f "$COMMON_MANIFEST" ]]; then run_deny "$COMMON_MANIFEST" "common"; fi
-# if [[ -f "$AGENT_MANIFEST" ]]; then run_deny "$AGENT_MANIFEST" "agent"; fi
-# if [[ -f "$TOOLS_MANIFEST" ]]; then run_deny "$TOOLS_MANIFEST" "tools"; fi
 
 if [[ -f "$APISERVER_MANIFEST" ]]; then
   run_deny "$APISERVER_MANIFEST" "apiserver"
@@ -72,6 +68,7 @@ echo "🔢 Total Failed: $FAILED_TOTAL" | tee -a "$LOG_FILE"
 if [[ "$FAILED_TOTAL" -gt 0 ]]; then
   echo "::error ::One or more cargo-deny checks failed."
   exit 1
+else
+  echo "✅ All cargo-deny checks passed successfully!"
+  exit 0
 fi
-
-echo "✅ All cargo-deny checks passed successfully!"
