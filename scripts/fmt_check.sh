@@ -24,57 +24,57 @@ APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
 FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
 
 # Run and parse test output
-run_clippy() {
+run_fmt() {
   local manifest="$1"
   local label="$2"
-  local clippy_passed=false
+  local fmt_passed=false
 
   echo "Running fmt for $label ($manifest)" | tee -a "$LOG_FILE"
 
   if cargo fmt --manifest-path="$manifest" --all --check | tee "$TMP_FILE"; then
     echo "fmt for $label passed clean." | tee -a "$LOG_FILE"
-    clippy_passed=true
+    fmt_passed=true
   else
-    echo "::error ::Clippy for $label failed! Found warnings/errors. Check logs." | tee -a "$LOG_FILE"
+    echo "::error ::fmt for $label failed! Found warnings/errors. Check logs." | tee -a "$LOG_FILE"
     # Capture relevant lines from TMP_FILE if needed for summary, or direct stdout/stderr
     # Example: Print only the warnings/errors to log, not the whole verbose output
     # grep -E "warning:|error:" "$TMP_FILE" | tee -a "$LOG_FILE"
   fi
 
   # Instead of PASSED_TOTAL/FAILED_TOTAL for *lints*, we track job success/failure
-  if $clippy_passed; then
+  if $fmt_passed; then
     echo "✅ fmt for $label: PASSED" >> "$REPORT_FILE"
   else
     echo "❌ fmt for $label: FAILED" >> "$REPORT_FILE"
     # Increment a counter for overall script failure
-    (( FAILED_TOTAL++ )) # FAILED_TOTAL now represents number of manifests that failed clippy
+    (( FAILED_TOTAL++ )) # FAILED_TOTAL now represents number of manifests that failed fmt
   fi
 }
 
-# Run common clippy checks
+# Run common fmt checks
 if [[ -f "$COMMON_MANIFEST" ]]; then
-  run_clippy "$COMMON_MANIFEST" "common"
+  run_fmt "$COMMON_MANIFEST" "common"
 else
   echo "::warning ::$COMMON_MANIFEST not found, skipping..."
 fi
 
-# Run apiserver clippy checks
+# Run apiserver fmt checks
 if [[ -f "$APISERVER_MANIFEST" ]]; then
-  run_clippy "$APISERVER_MANIFEST" "apiserver"
+  run_fmt "$APISERVER_MANIFEST" "apiserver"
 else
   echo "::warning ::$APISERVER_MANIFEST not found, skipping..."
 fi
 
-# Run tools clippy checks
+# Run tools fmt checks
 if [[ -f "$TOOLS_MANIFEST" ]]; then
-  run_clippy "$TOOLS_MANIFEST" "tools"
+  run_fmt "$TOOLS_MANIFEST" "tools"
 else
   echo "::warning ::$TOOLS_MANIFEST not found, skipping..."
 fi
 
-# Run agent clippy checks
+# Run agent fmt checks
 if [[ -f "$AGENT_MANIFEST" ]]; then
-  run_clippy "$AGENT_MANIFEST" "agent"
+  run_fmt "$AGENT_MANIFEST" "agent"
 else
   echo "::warning ::$AGENT_MANIFEST not found, skipping..."
 fi

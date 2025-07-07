@@ -20,3 +20,5 @@ jobs:
         run: ./scripts/clippy_check.sh
       - name: Format
         run: ./scripts/fmt_check.sh
+      - name: Cargo Deny (License, Advisories, Bans)
+        run: ./scripts/deny_check.sh
