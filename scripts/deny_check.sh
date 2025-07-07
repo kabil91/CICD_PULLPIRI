@@ -20,26 +20,21 @@ APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
 run_deny() {
   local manifest="$1"
   local label="$2"
-  local deny_passed=false
 
   echo -e "\n🚨 Checking $label ($manifest)..." | tee -a "$LOG_FILE"
 
   if cargo deny --manifest-path="$manifest" check 2>&1 | tee "$TMP_FILE"; then
     echo "✅ Deny check for $label passed clean." | tee -a "$LOG_FILE"
-    deny_passed=true
-  else
-    echo "::error ::Deny check for $label failed! Issues found." | tee -a "$LOG_FILE"
-    grep -E "error:|warning:" "$TMP_FILE" || true | tee -a "$LOG_FILE"
-  fi
-
-  if $deny_passed; then
     echo "✅ deny check for $label: PASSED" >> "$REPORT_FILE"
     (( PASSED_TOTAL++ ))
   else
+    echo "::error ::Deny check for $label failed! Issues found." | tee -a "$LOG_FILE"
+    grep -E "error:|warning:" "$TMP_FILE" || true | tee -a "$LOG_FILE"
     echo "❌ deny check for $label: FAILED" >> "$REPORT_FILE"
     (( FAILED_TOTAL++ ))
   fi
 }
+
 
 if [[ -f "$APISERVER_MANIFEST" ]]; then
   run_deny "$APISERVER_MANIFEST" "apiserver"
