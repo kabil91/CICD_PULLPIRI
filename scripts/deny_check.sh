@@ -5,7 +5,6 @@ LOG_FILE="deny_results.log"
 TMP_FILE="deny_output.txt"
 REPORT_FILE="deny_summary.md"
 
-# Clean up any previous logs
 rm -f "$LOG_FILE" "$TMP_FILE" "$REPORT_FILE"
 
 echo "🔍 Running Cargo Deny checks..." | tee -a "$LOG_FILE"
@@ -16,15 +15,8 @@ cd "$PROJECT_ROOT"
 FAILED_TOTAL=0
 PASSED_TOTAL=0
 
-# === Declare manifest paths ===
-# Uncomment others as needed
-# COMMON_MANIFEST="src/common/Cargo.toml"
-# AGENT_MANIFEST="src/agent/Cargo.toml"
-# TOOLS_MANIFEST="src/tools/Cargo.toml"
 APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
-# FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
 
-# === Function: Run cargo deny ===
 run_deny() {
   local manifest="$1"
   local label="$2"
@@ -49,22 +41,18 @@ run_deny() {
   fi
 }
 
-# === Run deny checks ===
-
 if [[ -f "$APISERVER_MANIFEST" ]]; then
   run_deny "$APISERVER_MANIFEST" "apiserver"
 else
   echo "::warning ::$APISERVER_MANIFEST not found, skipping..." | tee -a "$LOG_FILE"
 fi
 
-# === Summary ===
 echo -e "\n📄 Summary Report:" | tee -a "$LOG_FILE"
 cat "$REPORT_FILE" | tee -a "$LOG_FILE"
 
 echo -e "\n🔢 Total Passed: $PASSED_TOTAL" | tee -a "$LOG_FILE"
 echo "🔢 Total Failed: $FAILED_TOTAL" | tee -a "$LOG_FILE"
 
-# === Exit logic ===
 if [[ "$FAILED_TOTAL" -gt 0 ]]; then
   echo "::error ::One or more cargo-deny checks failed."
   exit 1
