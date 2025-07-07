@@ -5,6 +5,7 @@ LOG_FILE="deny_results.log"
 TMP_FILE="deny_output.txt"
 REPORT_FILE="deny_summary.md"
 
+# Clean up any previous logs
 rm -f "$LOG_FILE" "$TMP_FILE" "$REPORT_FILE"
 
 echo "🔍 Running Cargo Deny checks..." | tee -a "$LOG_FILE"
@@ -15,77 +16,62 @@ cd "$PROJECT_ROOT"
 FAILED_TOTAL=0
 PASSED_TOTAL=0
 
-# Declare manifest paths
-#COMMON_MANIFEST="src/common/Cargo.toml"
-#AGENT_MANIFEST="src/agent/Cargo.toml"
-#TOOLS_MANIFEST="src/tools/Cargo.toml"
+# === Declare manifest paths ===
+# Uncomment these as needed
+# COMMON_MANIFEST="src/common/Cargo.toml"
+# AGENT_MANIFEST="src/agent/Cargo.toml"
+# TOOLS_MANIFEST="src/tools/Cargo.toml"
 APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
-#FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
+# FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
 
-# Function to run cargo-deny check
+# === Function: Run cargo deny ===
 run_deny() {
   local manifest="$1"
   local label="$2"
   local deny_passed=false
 
-  echo "🚨 Running deny check for $label ($manifest)" | tee -a "$LOG_FILE"
+  echo -e "\n🚨 Checking $label ($manifest)..." | tee -a "$LOG_FILE"
 
   if cargo deny --manifest-path="$manifest" check 2>&1 | tee "$TMP_FILE"; then
-    echo "✅ deny check for $label passed clean." | tee -a "$LOG_FILE"
+    echo "✅ Deny check for $label passed clean." | tee -a "$LOG_FILE"
     deny_passed=true
   else
     echo "::error ::Deny check for $label failed! Issues found." | tee -a "$LOG_FILE"
-    # Optional: extract relevant issues
     grep -E "error:|warning:" "$TMP_FILE" | tee -a "$LOG_FILE"
   fi
 
   if $deny_passed; then
-    echo "✅ deny check for $label: PASSED" >> "$REPORT_FILE"
+    echo "✅ Deny check for $label: PASSED" >> "$REPORT_FILE"
     (( PASSED_TOTAL++ ))
   else
-    echo "❌ deny check for $label: FAILED" >> "$REPORT_FILE"
+    echo "❌ Deny check for $label: FAILED" >> "$REPORT_FILE"
     (( FAILED_TOTAL++ ))
   fi
 }
 
-# Run deny check for each manifest
-# if [[ -f "$COMMON_MANIFEST" ]]; then
-#   run_deny "$COMMON_MANIFEST" "common"
-# else
-#   echo "::warning ::$COMMON_MANIFEST not found, skipping..."
-# fi
+# === Run deny checks ===
 
-# Run apiserver deny checks
+# if [[ -f "$COMMON_MANIFEST" ]]; then run_deny "$COMMON_MANIFEST" "common"; fi
+# if [[ -f "$AGENT_MANIFEST" ]]; then run_deny "$AGENT_MANIFEST" "agent"; fi
+# if [[ -f "$TOOLS_MANIFEST" ]]; then run_deny "$TOOLS_MANIFEST" "tools"; fi
+
 if [[ -f "$APISERVER_MANIFEST" ]]; then
   run_deny "$APISERVER_MANIFEST" "apiserver"
 else
-  echo "::warning ::$APISERVER_MANIFEST not found, skipping..."
+  echo "::warning ::$APISERVER_MANIFEST not found, skipping..." | tee -a "$LOG_FILE"
 fi
 
-# Run tools deny checks
-# if [[ -f "$TOOLS_MANIFEST" ]]; then
-#   run_deny "$TOOLS_MANIFEST" "tools"
-# else
-#   echo "::warning ::$TOOLS_MANIFEST not found, skipping..."
-# fi
-
-# # Run agent deny checks
-# if [[ -f "$AGENT_MANIFEST" ]]; then
-#   run_deny "$AGENT_MANIFEST" "agent"
-# else
-#   echo "::warning ::$AGENT_MANIFEST not found, skipping..."
-# fi
-# Final summary
-echo -e "\n📄 Summary:" | tee -a "$LOG_FILE"
+# === Summary ===
+echo -e "\n📄 Summary Report:" | tee -a "$LOG_FILE"
 cat "$REPORT_FILE" | tee -a "$LOG_FILE"
 
 echo -e "\n🔢 Total Passed: $PASSED_TOTAL" | tee -a "$LOG_FILE"
 echo "🔢 Total Failed: $FAILED_TOTAL" | tee -a "$LOG_FILE"
 
-# Fail script if any deny check failed
+# === Exit logic ===
 if [[ "$FAILED_TOTAL" -gt 0 ]]; then
   echo "::error ::One or more cargo-deny checks failed."
   exit 1
 fi
 
-echo "✅ All cargo-deny checks passed!"
+echo "✅ All cargo-deny checks passed successfully!"
