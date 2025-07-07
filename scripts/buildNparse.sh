@@ -6,7 +6,7 @@ LOG_FILE="build_results.log"
 TMP_FILE="build_output.txt"
 rm -f "$LOG_FILE" "$TMP_FILE"
 
-echo "Running yfgy Cargo Build..." | tee -a "$LOG_FILE"
+echo "Running yfgy jhu Cargo Build..." | tee -a "$LOG_FILE"
 
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
 git config --global --add safe.directory "$PROJECT_ROOT"
