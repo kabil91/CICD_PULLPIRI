@@ -31,7 +31,7 @@ run_deny() {
 
   echo "🚨 Running deny check for $label ($manifest)" | tee -a "$LOG_FILE"
 
-  if cargo deny --manifest-path="$manifest" check 2>&1 | tee "$TMP_FILE"; then
+  if cargo deny --manifest-path="$manifest" check | tee "$TMP_FILE"; then
     echo "✅ deny check for $label passed clean." | tee -a "$LOG_FILE"
     deny_passed=true
   else
