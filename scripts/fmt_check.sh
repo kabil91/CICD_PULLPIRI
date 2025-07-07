@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-LOG_FILE="test_results.log"
-TMP_FILE="test_output.txt"
-REPORT_FILE="test_summary.md"
+LOG_FILE="fmt_results.log"
+TMP_FILE="fmt_output.txt"
+REPORT_FILE="fmt_summary.md"
 
 rm -f "$LOG_FILE" "$TMP_FILE" "$REPORT_FILE"
 
@@ -22,6 +22,7 @@ AGENT_MANIFEST="src/agent/Cargo.toml"
 TOOLS_MANIFEST="src/tools/Cargo.toml"
 APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
 FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
+ACTIONCONTROLLER_MANIFEST="src/player/actioncontroller/Cargo.toml"
 
 # Run and parse test output
 run_fmt() {
@@ -77,4 +78,18 @@ if [[ -f "$AGENT_MANIFEST" ]]; then
   run_fmt "$AGENT_MANIFEST" "agent"
 else
   echo "::warning ::$AGENT_MANIFEST not found, skipping..."
+fi
+
+# Run filtergateway fmt checks
+if [[ -f "$FILTERGATEWAY_MANIFEST" ]]; then
+  run_fmt "$FILTERGATEWAY_MANIFEST" "filtergateway"
+else
+  echo "::warning ::$FILTERGATEWAY_MANIFEST not found, skipping..."
+fi
+
+# Run actioncontroller fmt checks
+if [[ -f "$ACTIONCONTROLLER_MANIFEST" ]]; then
+  run_fmt "$ACTIONCONTROLLER_MANIFEST" "actioncontroller"
+else
+  echo "::warning ::$ACTIONCONTROLLER_MANIFEST not found, skipping..."
 fi
