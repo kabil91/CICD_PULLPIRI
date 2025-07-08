@@ -22,6 +22,7 @@ AGENT_MANIFEST="src/agent/Cargo.toml"
 TOOLS_MANIFEST="src/tools/Cargo.toml"
 APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
 FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
+ACTIONCONTROLLER_MANIFEST="src/player/actioncontroller/Cargo.toml"
 
 # Start background service and save its PID
 start_service() {
@@ -104,6 +105,20 @@ if [[ -f "$AGENT_MANIFEST" ]]; then
 else
   echo "::warning ::$AGENT_MANIFEST not found, skipping..."
 fi
+
+# Run filtergateway tests(development is under progress)
+# if [[ -f "$FILTERGATEWAY_MANIFEST" ]]; then
+#   run_tests "$FILTERGATEWAY_MANIFEST" "filtergateway"
+# else
+#   echo "::warning ::$FILTERGATEWAY_MANIFEST not found, skipping..."
+# fi
+
+# Run actioncontroller tests(development is under progress)
+# if [[ -f "$ACTIONCONTROLLER_MANIFEST" ]]; then
+#   run_tests "$ACTIONCONTROLLER_MANIFEST" "actioncontroller"
+# else
+#   echo "::warning ::$ACTIONCONTROLLER_MANIFEST not found, skipping..."
+# fi
 
 # Generate test summary report
 echo "# Test Results" > "$REPORT_FILE"

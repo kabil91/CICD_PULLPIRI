@@ -1,13 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-LOG_FILE="test_results.log"
-TMP_FILE="test_output.txt"
-REPORT_FILE="test_summary.md"
+LOG_FILE="clippy_results.log"
+TMP_FILE="clippy_output.txt"
+REPORT_FILE="clippy_summary.md"
 
 rm -f "$LOG_FILE" "$TMP_FILE" "$REPORT_FILE"
 
-echo "Running Cargo Tests..." | tee -a "$LOG_FILE"
+echo "Running Cargo clippy..." | tee -a "$LOG_FILE"
 
 PROJECT_ROOT=${GITHUB_WORKSPACE:-$(pwd)}
 cd "$PROJECT_ROOT"
@@ -18,10 +18,11 @@ PIDS=()
 
 # Declare manifest paths
 COMMON_MANIFEST="src/common/Cargo.toml"
-#AGENT_MANIFEST="src/agent/Cargo.toml"
+AGENT_MANIFEST="src/agent/Cargo.toml"
 TOOLS_MANIFEST="src/tools/Cargo.toml"
-#APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
-#FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
+APISERVER_MANIFEST="src/server/apiserver/Cargo.toml"
+FILTERGATEWAY_MANIFEST="src/player/filtergateway/Cargo.toml"
+ACTIONCONTROLLER_MANIFEST="src/player/actioncontroller/Cargo.toml"
 
 # Run and parse test output
 run_clippy() {
@@ -59,23 +60,37 @@ else
 fi
 
 # # Run apiserver clippy checks
-# if [[ -f "$APISERVER_MANIFEST" ]]; then
-#   run_clippy "$APISERVER_MANIFEST" "apiserver"
-# else
-#   echo "::warning ::$APISERVER_MANIFEST not found, skipping..."
-# fi
+if [[ -f "$APISERVER_MANIFEST" ]]; then
+  run_clippy "$APISERVER_MANIFEST" "apiserver"
+else
+  echo "::warning ::$APISERVER_MANIFEST not found, skipping..."
+fi
 
-# # Run tools clippy checks
-# if [[ -f "$TOOLS_MANIFEST" ]]; then
-#   run_clippy "$TOOLS_MANIFEST" "tools"
-# else
-#   echo "::warning ::$TOOLS_MANIFEST not found, skipping..."
-# fi
+# Run tools clippy checks
+if [[ -f "$TOOLS_MANIFEST" ]]; then
+  run_clippy "$TOOLS_MANIFEST" "tools"
+else
+  echo "::warning ::$TOOLS_MANIFEST not found, skipping..."
+fi
 
-# # Run agent clippy checks
-# if [[ -f "$AGENT_MANIFEST" ]]; then
-#   run_clippy "$AGENT_MANIFEST" "agent"
-# else
-#   echo "::warning ::$AGENT_MANIFEST not found, skipping..."
-# fi
+# Run agent clippy checks
+if [[ -f "$AGENT_MANIFEST" ]]; then
+  run_clippy "$AGENT_MANIFEST" "agent"
+else
+  echo "::warning ::$AGENT_MANIFEST not found, skipping..."
+fi
+
+# Run filtergateway clippy checks
+if [[ -f "$FILTERGATEWAY_MANIFEST" ]]; then
+  run_clippy "$FILTERGATEWAY_MANIFEST" "filtergateway"
+else
+  echo "::warning ::$FILTERGATEWAY_MANIFEST not found, skipping..."
+fi
+
+# Run actioncontroller clippy checks
+if [[ -f "$ACTIONCONTROLLER_MANIFEST" ]]; then
+  run_clippy "$ACTIONCONTROLLER_MANIFEST" "actioncontroller"
+else
+  echo "::warning ::$ACTIONCONTROLLER_MANIFEST not found, skipping..."
+fi
 
